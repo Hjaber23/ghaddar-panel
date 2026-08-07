@@ -7,7 +7,16 @@ const app = express();
 const PORT = process.env.API_PORT || 5001;
 const connectionInfo = getConnectionInfo();
 
-app.use(cors());
+// Enhanced CORS configuration for ngrok and Vercel
+const corsOptions = {
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
+  credentials: false,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.get('/', (_req, res) => {
