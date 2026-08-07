@@ -1,14 +1,15 @@
 const useWindowsAuth = !process.env.DB_USER;
 
 let sql;
+let useNativeDriver = false;
+
 if (useWindowsAuth) {
   try {
     sql = require('mssql/msnodesqlv8');
+    useNativeDriver = true;
   } catch (err) {
-    console.error('\n*** msnodesqlv8 is required for Windows Authentication ***');
-    console.error('Run: npm install msnodesqlv8');
-    console.error('Or set DB_USER and DB_PASSWORD in .env for SQL Server login.\n');
-    throw err;
+    console.warn('msnodesqlv8 is unavailable; falling back to mssql. Set DB_USER and DB_PASSWORD for SQL Server login auth.');
+    sql = require('mssql');
   }
 } else {
   sql = require('mssql');
@@ -36,7 +37,7 @@ function buildConfig() {
     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
   };
 
-  if (useWindowsAuth) {
+  if (useNativeDriver) {
     config.driver = 'msnodesqlv8';
   } else {
     config.user = process.env.DB_USER;
