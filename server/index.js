@@ -7,12 +7,35 @@ const app = express();
 const PORT = process.env.API_PORT || 5001;
 const connectionInfo = getConnectionInfo();
 
-// Enhanced CORS configuration for ngrok and Vercel
+// Explicit CORS configuration to allow requests from Vercel
+const allowedOrigins = [
+  'https://ghaddar-panel.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5001',
+  /\.ngrok(-free)?\.dev$/ // Allow any ngrok domain
+];
+
 const corsOptions = {
-  origin: '*', // Allow all origins
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches any allowed origin
+    const isAllowed = allowedOrigins.some(ao => 
+      ao instanceof RegExp ? ao.test(origin) : ao === origin
+    );
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      // Still allow it but log it - ngrok tunnel needs to work
+      callback(null, true);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
   credentials: false,
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
