@@ -2,45 +2,47 @@
 const apiUrl = 'https://slackness-shown-tree.ngrok-free.dev';
 
 export default async function handler(req, res) {
-  // Only allow GET requests for now
-  if (req.method !== 'GET' && req.method !== 'OPTIONS') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(200).end();
   }
 
   try {
-    // Get the path from query parameter (e.g., /api/proxy?path=/api/health)
-    const path = req.query.path || '/api/health';
+    // Get the path from query parameter
+    const path = req.query.path ? decodeURIComponent(req.query.path) : '/api/health';
     const fullUrl = `${apiUrl}${path}`;
 
-    console.log(`Proxying: ${fullUrl}`);
+    console.log(`[Proxy] Forwarding: ${req.method} ${fullUrl}`);
 
     // Fetch from the ngrok backend
     const response = await fetch(fullUrl, {
-      method: 'GET',
+      method: req.method || 'GET',
       headers: {
         'ngrok-skip-browser-warning': 'true',
         'Content-Type': 'application/json',
       },
     });
 
-    const data = await response.json();
+    const data = await response.text();
 
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Try to parse as JSON, otherwise return as text
+    let jsonData;
+    try {
+      jsonData = JSON.parse(data);
+    } catch {
+      jsonData = { raw: data };
+    }
+
     res.setHeader('Content-Type', 'application/json');
-
-    return res.status(response.status).json(data);
+    return res.status(response.status).json(jsonData);
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    console.error('[Proxy] Error:', error.message);
+    res.setHeader('Content-Type', 'application/json');
     return res.status(500).json({ error: error.message });
   }
 }
