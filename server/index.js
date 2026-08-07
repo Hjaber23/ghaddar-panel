@@ -7,39 +7,23 @@ const app = express();
 const PORT = process.env.API_PORT || 5001;
 const connectionInfo = getConnectionInfo();
 
-// Explicit CORS configuration to allow requests from Vercel
-const allowedOrigins = [
-  'https://ghaddar-panel.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5001',
-  /\.ngrok(-free)?\.dev$/ // Allow any ngrok domain
-];
+// Add CORS headers to every response
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning');
+  res.header('Access-Control-Allow-Credentials', 'false');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin matches any allowed origin
-    const isAllowed = allowedOrigins.some(ao => 
-      ao instanceof RegExp ? ao.test(origin) : ao === origin
-    );
-    
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      // Still allow it but log it - ngrok tunnel needs to work
-      callback(null, true);
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
-  credentials: false,
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+// Also use express cors middleware
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 app.get('/', (_req, res) => {

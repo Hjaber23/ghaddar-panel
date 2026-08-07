@@ -1,4 +1,6 @@
-const API_BASE = process.env.REACT_APP_API_URL || '';
+// API Configuration
+// Production API URL (ngrok tunnel to local backend)
+const API_BASE = process.env.REACT_APP_API_URL || 'https://slackness-shown-tree.ngrok-free.dev';
 
 async function fetchJson(path) {
   const headers = {};
