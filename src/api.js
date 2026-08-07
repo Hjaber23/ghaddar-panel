@@ -1,14 +1,27 @@
-// Use Vercel API proxy to reach ngrok backend
-// This avoids CORS issues by proxying through Vercel's own domain
-const API_BASE = '/api/proxy?path=';
+// Direct connection to ngrok backend with proper headers
+const NGROK_URL = 'https://slackness-shown-tree.ngrok-free.dev';
 
 async function fetchJson(path) {
-  const response = await fetch(`${API_BASE}${encodeURIComponent(path)}`);
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.error || body.message || `Request failed: ${response.status}`);
+  try {
+    const response = await fetch(`${NGROK_URL}${path}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      mode: 'cors',
+      credentials: 'omit',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`API Error [${path}]:`, error);
+    throw new Error(`Failed to fetch ${path}: ${error.message}`);
   }
-  return response.json();
 }
 
 export const api = {

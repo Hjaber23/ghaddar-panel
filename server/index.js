@@ -7,24 +7,30 @@ const app = express();
 const PORT = process.env.API_PORT || 5001;
 const connectionInfo = getConnectionInfo();
 
-// Add CORS headers to every response
+// Comprehensive CORS configuration for all origins
+const corsOptions = {
+  origin: true, // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning', 'Authorization'],
+  credentials: false,
+  preflightContinue: true,
+  optionsSuccessStatus: 200,
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Manually handle all OPTIONS requests
+app.options('*', cors(corsOptions));
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Log all requests
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning');
-  res.header('Access-Control-Allow-Credentials', 'false');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
-
-// Also use express cors middleware
-app.use(cors({ origin: '*' }));
-app.use(express.json());
 
 app.get('/', (_req, res) => {
   res.json({ message: 'MotorsCompany API is running', port: PORT });
